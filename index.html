@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0f14" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="货运报备" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" />
+  <link rel="stylesheet" href="./styles.css" />
+  <title>货运行程报备</title>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">CARGO REMINDER</div>
+        <h1>货运行程报备</h1>
+      </div>
+      <button id="notifyBtn" class="ghost">开启提醒</button>
+    </header>
+
+    <div id="modeBanner" class="mode-banner hidden"></div>
+
+    <section class="hero">
+      <div class="hero-title">今天需要处理</div>
+      <div id="todayCount" class="hero-count">0</div>
+      <div class="hero-sub">到达前自动提醒，不再手动记闹钟。</div>
+    </section>
+
+    <section class="toolbar">
+      <button class="filter active" data-filter="all">全部</button>
+      <button class="filter" data-filter="待报备">待报备</button>
+      <button class="filter" data-filter="已报备">已报备</button>
+      <button id="addBtn" class="primary">＋ 新增行程</button>
+    </section>
+
+    <section id="tripList" class="trip-list"></section>
+  </main>
+
+  <dialog id="tripDialog">
+    <form id="tripForm" method="dialog" class="form-card">
+      <div class="form-head">
+        <div>
+          <div class="eyebrow">TRIP</div>
+          <h2 id="formTitle">新增行程</h2>
+        </div>
+        <button type="button" id="closeDialog" class="icon-btn">×</button>
+      </div>
+      <input type="hidden" id="tripId" />
+      <div class="grid-2">
+        <label>发货地<input id="origin" required placeholder="如：鹤壁" /></label>
+        <label>目的地<input id="destination" required placeholder="如：淇县" /></label>
+      </div>
+      <div class="grid-2">
+        <label>发货日期<input id="shipDate" type="date" /></label>
+        <label>预计到达<input id="etaDate" type="date" required /></label>
+      </div>
+      <div class="grid-2">
+        <label>提前几天提醒
+          <select id="remindDays">
+            <option value="0">到达当天</option>
+            <option value="1" selected>提前 1 天</option>
+            <option value="2">提前 2 天</option>
+            <option value="3">提前 3 天</option>
+          </select>
+        </label>
+        <label>提醒时间<input id="remindTime" type="time" value="09:00" /></label>
+      </div>
+      <label>备注<textarea id="note" rows="3" placeholder="车牌、货物名称、联系人……可不填"></textarea></label>
+      <div class="form-actions">
+        <button type="button" id="deleteBtn" class="danger hidden">删除</button>
+        <button type="submit" class="primary grow">保存</button>
+      </div>
+    </form>
+  </dialog>
+
+  <template id="tripTemplate">
+    <article class="trip-card">
+      <div class="route-row">
+        <div class="route"></div>
+        <span class="badge"></span>
+      </div>
+      <div class="dates"></div>
+      <div class="reminder"></div>
+      <div class="note"></div>
+      <div class="card-actions">
+        <button class="done-btn">标记已报备</button>
+        <button class="edit-btn ghost">编辑</button>
+      </div>
+    </article>
+  </template>
+
+  <script src="./app.js" type="module"></script>
+</body>
+</html>

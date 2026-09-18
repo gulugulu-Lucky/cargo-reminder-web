@@ -1,4 +1,4 @@
-const CACHE = 'cargo-reminder-cf-v4';
+const CACHE = 'cargo-reminder-cf-v5';
 const scopeUrl = self.registration.scope;
 const assetUrl = path => new URL(path, scopeUrl).href;
 const ASSETS = ['', 'index.html', 'app.js', 'styles.css', 'manifest.webmanifest', 'icon.svg'].map(assetUrl);

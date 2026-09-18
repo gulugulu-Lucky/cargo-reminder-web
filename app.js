@@ -295,7 +295,6 @@ async function testNotification() {
     setNotifyStatus('当前环境不支持通知', 'warn');
     return;
   }
-  let stage = '请求通知权限';
   try {
     const permission = Notification.permission === 'granted'
       ? 'granted'
@@ -304,24 +303,25 @@ async function testNotification() {
       setNotifyStatus('通知权限未允许', 'warn');
       return;
     }
-    stage = '显示本机测试通知';
-    const reg = await navigator.serviceWorker.ready;
-    await reg.showNotification('✅ 本机通知测试', {
-      body: '如果你看到这条，说明设备本身的通知显示是正常的。',
-      icon: './icon.svg',
-      tag: 'cargo-local-test'
-    });
-    setNotifyStatus('本机测试通知已触发', 'ok');
 
+    const reg = await navigator.serviceWorker.ready;
     const sub = 'PushManager' in window ? await reg.pushManager.getSubscription() : null;
-    if (sub && serverMode) {
-      stage = '发送服务器测试推送';
-      const result = await api('/api/test-push', { method: 'POST', body: JSON.stringify({ endpoint: sub.endpoint }) });
-      setNotifyStatus(`本机测试成功；服务器推送 ${result.delivered}/${result.subscriptions}`, result.ok ? 'ok' : 'warn');
+    if (!sub) {
+      setNotifyStatus('还没有服务器推送订阅，请先点“开启提醒”', 'warn');
+      alert('请先点“开启提醒”，成功后再测试通知。');
+      return;
     }
+
+    setNotifyStatus('8 秒后发送测试通知：现在回桌面或锁屏');
+    alert('测试通知会在 8 秒后发到手机。点“确定”后马上回桌面或锁屏，就能看到它真实弹出来的样子。');
+    const result = await api('/api/test-push', {
+      method: 'POST',
+      body: JSON.stringify({ endpoint: sub.endpoint, delayMs: 8000 })
+    });
+    setNotifyStatus(`服务器测试推送 ${result.delivered}/${result.subscriptions}`, result.ok ? 'ok' : 'warn');
   } catch (e) {
-    setNotifyStatus(`${stage}失败：${errorText(e)}`, 'warn');
-    alert(`${stage}失败：${errorText(e)}`);
+    setNotifyStatus('测试通知失败：' + errorText(e), 'warn');
+    alert('测试通知失败：' + errorText(e));
   }
 }
 $('#notifyBtn').onclick = enablePush;

@@ -370,9 +370,16 @@ async function testNotification() {
 
     setNotifyStatus('8 秒后发送测试通知：现在回桌面或锁屏');
     alert('测试通知会在 8 秒后发到手机。点“确定”后马上回桌面或锁屏，就能看到它真实弹出来的样子。');
+    const previewTrip = trips.find(t => t.status !== '已报备') || trips[0] || null;
     const result = await api('/api/test-push', {
       method: 'POST',
-      body: JSON.stringify({ endpoint: sub.endpoint, delayMs: 8000 })
+      body: JSON.stringify({
+        endpoint: sub.endpoint,
+        delayMs: 8000,
+        origin: previewTrip?.origin || '',
+        destination: previewTrip?.destination || '',
+        eta_date: previewTrip?.eta_date || ''
+      })
     });
     if (result.queued) {
       setNotifyStatus('测试通知已排队：现在回桌面或锁屏，约 8 秒后会弹出', 'ok');

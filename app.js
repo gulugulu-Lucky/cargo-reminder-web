@@ -184,51 +184,141 @@ function isIosStandalone() {
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
   return !isIOS || window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 }
+function setNotifyStatus(message, kind = '') {
+  const el = $('#notifyStatus');
+  if (!el) return;
+  el.textContent = '通知状态：' + message;
+  el.classList.remove('ok', 'warn');
+  if (kind) el.classList.add(kind);
+}
+function errorText(e) {
+  return [e?.name, e?.message].filter(Boolean).join('：') || '未知错误';
+}
 async function refreshPushButton() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    setNotifyStatus('当前环境不支持 Web Push', 'warn');
+    return;
+  }
   try {
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
-    if (sub && Notification.permission === 'granted') $('#notifyBtn').textContent = '提醒已开启';
-  } catch {}
+    if (sub && Notification.permission === 'granted') {
+      $('#notifyBtn').textContent = '提醒已开启';
+      setNotifyStatus('权限已允许，已有推送订阅', 'ok');
+    } else if (Notification.permission === 'granted') {
+      setNotifyStatus('通知权限已允许，尚未创建推送订阅');
+    } else {
+      setNotifyStatus('等待你开启通知权限');
+    }
+  } catch (e) {
+    setNotifyStatus('检测失败：' + errorText(e), 'warn');
+  }
 }
 async function enablePush() {
   if (!serverMode) {
-    alert('后台数据库还没接通，所以暂时不能开启自动推送。等我们把 Cloudflare D1 绑定好就可以。');
+    alert('后台数据库还没接通，所以暂时不能开启自动推送。');
     return;
   }
   if (!isIosStandalone()) {
     alert('iPhone 需要先用 Safari 打开这个网站 → 分享 → 添加到主屏幕，然后从桌面图标打开，再点“开启提醒”。');
     return;
   }
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    setNotifyStatus('当前环境不支持网页推送', 'warn');
     alert('当前环境不支持网页推送。iPhone 需要 iOS 16.4 或更高版本，并从主屏幕打开本应用。');
     return;
   }
+
+  let stage = '请求通知权限';
   try {
-    const reg = await navigator.serviceWorker.ready;
-    const config = await api('/api/config');
+    // iOS 要求权限请求直接发生在用户点击之后，所以这里必须放在任何网络 await 之前。
+    setNotifyStatus('正在请求通知权限…');
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') {
+      setNotifyStatus('通知权限未允许', 'warn');
       alert('需要允许通知，才能在报备日自动提醒你。');
       return;
     }
+
+    stage = '等待 Service Worker';
+    setNotifyStatus('权限已允许，正在准备推送服务…', 'ok');
+    const reg = await navigator.serviceWorker.ready;
+
+    stage = '读取推送配置';
+    setNotifyStatus('正在连接后台读取推送配置…');
+    const config = await api('/api/config');
+
+    stage = '创建推送订阅';
     let sub = await reg.pushManager.getSubscription();
     if (!sub) {
+      setNotifyStatus('正在创建设备推送订阅…');
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: base64ToUint8Array(config.vapidPublicKey)
       });
     }
+
+    stage = '保存推送订阅';
+    setNotifyStatus('正在保存设备订阅…');
     await api('/api/subscribe', { method: 'POST', body: JSON.stringify(sub.toJSON ? sub.toJSON() : sub) });
     $('#notifyBtn').textContent = '提醒已开启';
+
+    stage = '发送测试推送';
+    setNotifyStatus('订阅成功，正在发送测试推送…', 'ok');
     const test = await api('/api/test-push', { method: 'POST', body: JSON.stringify({ endpoint: sub.endpoint }) });
-    if (!test.ok) alert('提醒权限已经开启，但测试通知没有送达。我们部署完后再检查一次。');
+    if (test.ok) {
+      setNotifyStatus(`推送已提交：送达 ${test.delivered}/${test.subscriptions}`, 'ok');
+    } else {
+      setNotifyStatus(`订阅成功，但测试推送未送达（${test.delivered}/${test.subscriptions}）`, 'warn');
+      alert('提醒权限已经开启，但测试通知没有送达。');
+    }
   } catch (e) {
-    alert('开启提醒失败：' + e.message);
+    const detail = `${stage}失败：${errorText(e)}`;
+    setNotifyStatus(detail, 'warn');
+    alert(detail);
+  }
+}
+
+async function testNotification() {
+  if (!isIosStandalone()) {
+    alert('iPhone 需要先把网站添加到主屏幕，再从桌面图标打开测试通知。');
+    return;
+  }
+  if (!('serviceWorker' in navigator) || !('Notification' in window)) {
+    setNotifyStatus('当前环境不支持通知', 'warn');
+    return;
+  }
+  let stage = '请求通知权限';
+  try {
+    const permission = Notification.permission === 'granted'
+      ? 'granted'
+      : await Notification.requestPermission();
+    if (permission !== 'granted') {
+      setNotifyStatus('通知权限未允许', 'warn');
+      return;
+    }
+    stage = '显示本机测试通知';
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('✅ 本机通知测试', {
+      body: '如果你看到这条，说明设备本身的通知显示是正常的。',
+      icon: './icon.svg',
+      tag: 'cargo-local-test'
+    });
+    setNotifyStatus('本机测试通知已触发', 'ok');
+
+    const sub = 'PushManager' in window ? await reg.pushManager.getSubscription() : null;
+    if (sub && serverMode) {
+      stage = '发送服务器测试推送';
+      const result = await api('/api/test-push', { method: 'POST', body: JSON.stringify({ endpoint: sub.endpoint }) });
+      setNotifyStatus(`本机测试成功；服务器推送 ${result.delivered}/${result.subscriptions}`, result.ok ? 'ok' : 'warn');
+    }
+  } catch (e) {
+    setNotifyStatus(`${stage}失败：${errorText(e)}`, 'warn');
+    alert(`${stage}失败：${errorText(e)}`);
   }
 }
 $('#notifyBtn').onclick = enablePush;
+$('#testNotifyBtn').onclick = testNotification;
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').then(refreshPushButton).catch(() => {});

@@ -1,0 +1,13 @@
+{
+  "name": "货运行程报备",
+  "short_name": "货运报备",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b0f14",
+  "theme_color": "#0b0f14",
+  "description": "记录货运行程，并在预计到达前自动提醒报备。",
+  "icons": [
+    {"src":"./icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}
+  ]
+}

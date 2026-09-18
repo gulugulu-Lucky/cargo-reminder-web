@@ -318,7 +318,11 @@ async function testNotification() {
       method: 'POST',
       body: JSON.stringify({ endpoint: sub.endpoint, delayMs: 8000 })
     });
-    setNotifyStatus(`服务器测试推送 ${result.delivered}/${result.subscriptions}`, result.ok ? 'ok' : 'warn');
+    if (result.queued) {
+      setNotifyStatus('测试通知已排队：现在回桌面或锁屏，约 8 秒后会弹出', 'ok');
+    } else {
+      setNotifyStatus(`服务器测试推送 ${result.delivered}/${result.subscriptions}`, result.ok ? 'ok' : 'warn');
+    }
   } catch (e) {
     setNotifyStatus('测试通知失败：' + errorText(e), 'warn');
     alert('测试通知失败：' + errorText(e));

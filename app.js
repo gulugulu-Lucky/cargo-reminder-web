@@ -5,10 +5,22 @@ const form = $('#tripForm');
 const tpl = $('#tripTemplate');
 let trips = [];
 let activeFilter = 'all';
-let serverMode = true;
+let serverMode = false;
 
 const WORKER_API_ORIGIN = 'https://cargo-reminder-pwa.k995680983-3fb.workers.dev';
 const API_BASE = location.hostname.endsWith('.github.io') ? WORKER_API_ORIGIN : '';
+const LOCAL_KEY = 'cargoTripsLocalV2';
+const CLIENT_ID_KEY = 'cargoReminderBrowserId';
+
+function getClientId() {
+  let id = localStorage.getItem(CLIENT_ID_KEY);
+  if (!id) {
+    id = (crypto.randomUUID ? crypto.randomUUID() : `browser-${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g, '');
+    localStorage.setItem(CLIENT_ID_KEY, id);
+  }
+  return id;
+}
+const CLIENT_ID = getClientId();
 
 const fmt = d => d ? new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric' }).format(new Date(d + 'T12:00:00')) : '—';
 function reminderDate(trip) {
@@ -20,10 +32,32 @@ function isToday(d) {
   const n = new Date();
   return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
 }
-function localLoad() { return JSON.parse(localStorage.getItem('cargoTrips') || '[]'); }
-function localSave() { localStorage.setItem('cargoTrips', JSON.stringify(trips)); }
+function localLoad() {
+  try {
+    const current = localStorage.getItem(LOCAL_KEY);
+    if (current !== null) {
+      const parsed = JSON.parse(current);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+    const legacy = JSON.parse(localStorage.getItem('cargoTrips') || '[]');
+    const migrated = Array.isArray(legacy) ? legacy.map((t, i) => ({
+      ...t,
+      id: String(t.id || `legacy-${Date.now()}-${i}`)
+    })) : [];
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(migrated));
+    return migrated;
+  } catch {
+    return [];
+  }
+}
+function localSave() {
+  localStorage.setItem(LOCAL_KEY, JSON.stringify(trips));
+}
 async function api(url, options = {}) {
-  const target = url.startsWith('/api/') ? API_BASE + url : url;
+  let target = url.startsWith('/api/') ? API_BASE + url : url;
+  if (url.startsWith('/api/')) {
+    target += (target.includes('?') ? '&' : '?') + 'client_id=' + encodeURIComponent(CLIENT_ID);
+  }
   const r = await fetch(target, { headers: { 'Content-Type': 'application/json' }, ...options });
   if (!r.ok) {
     let message = '请求失败';
@@ -40,19 +74,34 @@ function setModeBanner(message = '') {
   banner.classList.remove('hidden');
 }
 
-async function loadTrips() {
+async function syncLocalTrips() {
+  if (!serverMode) return false;
   try {
-    trips = await api('/api/trips');
-    serverMode = true;
-    setModeBanner('');
+    await api('/api/sync-all', {
+      method: 'POST',
+      body: JSON.stringify({ trips })
+    });
+    return true;
   } catch {
     serverMode = false;
-    trips = localLoad();
-    setModeBanner(location.hostname.endsWith('.github.io')
-      ? '⚠️ 当前网络无法连接提醒后台。这个 GitHub 页面能打开，但手机网络访问不到 Cloudflare API；不开 VPN 时只能本机记录，自动同步和推送不可用。'
-      : '⚠️ 当前为本机模式：行程能记录，但后台自动推送还没接通。');
+    setModeBanner('⚠️ 行程已保存在本浏览器，但提醒后台暂时没同步上。网络恢复后重新打开页面会自动重试。');
+    return false;
   }
+}
+
+async function loadTrips() {
+  trips = localLoad();
   render();
+
+  try {
+    await api('/api/health');
+    serverMode = true;
+    setModeBanner('');
+    await syncLocalTrips();
+  } catch {
+    serverMode = false;
+    setModeBanner('⚠️ 当前仅本机保存：行程不会丢，但自动推送要等提醒后台恢复后才能同步。');
+  }
 }
 
 function render() {
@@ -90,16 +139,14 @@ async function toggleDone(t) {
   await updateTrip(t.id, { status });
 }
 async function updateTrip(id, patch) {
-  if (serverMode) {
-    try { await api('/api/trips/' + id, { method: 'PATCH', body: JSON.stringify(patch) }); }
-    catch (e) { alert(e.message); return; }
-  } else {
-    const i = trips.findIndex(x => String(x.id) === String(id));
-    trips[i] = { ...trips[i], ...patch };
-    localSave();
-  }
-  await loadTrips();
+  const i = trips.findIndex(x => String(x.id) === String(id));
+  if (i < 0) return;
+  trips[i] = { ...trips[i], ...patch };
+  localSave();
+  render();
+  if (serverMode) await syncLocalTrips();
 }
+
 function clearForm() {
   form.reset();
   $('#tripId').value = '';
@@ -141,32 +188,35 @@ form.addEventListener('submit', async e => {
     note: $('#note').value.trim()
   };
   if (!data.origin || !data.destination || !data.eta_date) return;
+
   const id = $('#tripId').value;
-  try {
-    if (serverMode) {
-      if (id) await api('/api/trips/' + id, { method: 'PATCH', body: JSON.stringify(data) });
-      else await api('/api/trips', { method: 'POST', body: JSON.stringify(data) });
-    } else {
-      if (id) {
-        const i = trips.findIndex(x => String(x.id) === String(id));
-        trips[i] = { ...trips[i], ...data, notified: 0 };
-      } else {
-        trips.push({ id: Date.now(), ...data, status: '待报备', notified: 0 });
-      }
-      localSave();
-    }
-    dialog.close();
-    await loadTrips();
-  } catch (err) { alert(err.message); }
+  if (id) {
+    const i = trips.findIndex(x => String(x.id) === String(id));
+    if (i >= 0) trips[i] = { ...trips[i], ...data, notified: 0 };
+  } else {
+    const localId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    trips.push({ id: localId, ...data, status: '待报备', notified: 0 });
+  }
+
+  localSave();
+  dialog.close();
+  render();
+  if (serverMode) {
+    const ok = await syncLocalTrips();
+    if (!ok) alert('行程已经保存在这个浏览器里，但后台提醒暂时没同步上。');
+  }
 });
+
 $('#deleteBtn').onclick = async () => {
   const id = $('#tripId').value;
   if (!id || !confirm('确定删除这条行程吗？')) return;
-  if (serverMode) await api('/api/trips/' + id, { method: 'DELETE' });
-  else { trips = trips.filter(x => String(x.id) !== String(id)); localSave(); }
+  trips = trips.filter(x => String(x.id) !== String(id));
+  localSave();
   dialog.close();
-  await loadTrips();
+  render();
+  if (serverMode) await syncLocalTrips();
 };
+
 $('#addBtn').onclick = openNew;
 $('#closeDialog').onclick = () => dialog.close();
 document.querySelectorAll('.filter').forEach(b => b.onclick = () => {
@@ -212,6 +262,12 @@ async function refreshPushButton() {
     if (sub && Notification.permission === 'granted') {
       $('#notifyBtn').textContent = '提醒已开启';
       setNotifyStatus('权限已允许，已有推送订阅', 'ok');
+      try {
+        await api('/api/subscribe', {
+          method: 'POST',
+          body: JSON.stringify(sub.toJSON ? sub.toJSON() : sub)
+        });
+      } catch {}
     } else if (Notification.permission === 'granted') {
       setNotifyStatus('通知权限已允许，尚未创建推送订阅');
     } else {
@@ -335,3 +391,8 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').then(refreshPushButton).catch(() => {});
 }
 loadTrips();
+
+
+document.addEventListener('dblclick', event => {
+  event.preventDefault();
+}, { passive: false });

@@ -3,3 +3,9 @@
 .mode-banner{margin:18px 0 0;padding:12px 14px;border:1px solid rgba(255,202,106,.35);background:rgba(255,202,106,.08);color:#ffd98f;border-radius:16px;font-size:13px;line-height:1.5}
 
 .notify-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;flex-wrap:wrap}.notify-actions .subtle{color:#cfd6e2;font-weight:600}.notify-status{margin-top:10px;color:var(--muted);font-size:12px;line-height:1.45}.notify-status.ok{color:var(--ok)}.notify-status.warn{color:var(--warn)}@media(max-width:520px){.topbar{align-items:flex-start}.notify-actions{max-width:190px}.notify-actions button{padding:10px 11px}.notify-status{text-align:right}}
+
+
+/* Prevent accidental double-tap/double-click zoom while keeping normal scrolling and pinch zoom. */
+html, body, button, input, select, textarea, label, .trip-card {
+  touch-action: manipulation;
+}

@@ -48,7 +48,9 @@ async function loadTrips() {
   } catch {
     serverMode = false;
     trips = localLoad();
-    setModeBanner('⚠️ 当前为本机模式：行程能记录，但后台自动推送还没接通。部署时绑定 D1 后会自动恢复。');
+    setModeBanner(location.hostname.endsWith('.github.io')
+      ? '⚠️ 当前网络无法连接提醒后台。这个 GitHub 页面能打开，但手机网络访问不到 Cloudflare API；不开 VPN 时只能本机记录，自动同步和推送不可用。'
+      : '⚠️ 当前为本机模式：行程能记录，但后台自动推送还没接通。');
   }
   render();
 }
@@ -195,6 +197,11 @@ function errorText(e) {
   return [e?.name, e?.message].filter(Boolean).join('：') || '未知错误';
 }
 async function refreshPushButton() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (isIOS && !isIosStandalone()) {
+    setNotifyStatus('iPhone 请先“添加到主屏幕”，再从桌面图标打开', 'warn');
+    return;
+  }
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
     setNotifyStatus('当前环境不支持 Web Push', 'warn');
     return;

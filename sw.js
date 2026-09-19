@@ -1,7 +1,7 @@
-const CACHE = 'cargo-reminder-cf-v5';
+const CACHE = 'cargo-reminder-v17';
 const scopeUrl = self.registration.scope;
 const assetUrl = path => new URL(path, scopeUrl).href;
-const ASSETS = ['', 'index.html', 'app.js', 'styles.css', 'manifest.webmanifest', 'icon.svg'].map(assetUrl);
+const ASSETS = ['', 'index.html', 'manifest.webmanifest', 'icon.svg'].map(assetUrl);
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
@@ -26,7 +26,7 @@ function appUrl(path = './') {
 
 self.addEventListener('push', event => {
   const data = event.data ? event.data.json() : {};
-  event.waitUntil(self.registration.showNotification(data.title || '货运行程提醒', {
+  event.waitUntil(self.registration.showNotification(data.title || '行程提醒', {
     body: data.body || '有一条行程需要报备',
     icon: assetUrl('icon.svg'),
     tag: data.tag || 'cargo-reminder',

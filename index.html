@@ -1,102 +1,1141 @@
 <!doctype html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0f14" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="行程提醒" />
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icon.svg" />
-  <link rel="stylesheet" href="./styles.css" />
-  <title>货运行程报备</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,minimum-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#F8F5EA">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="行程提醒">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg">
+<title>行程提醒</title>
+<style>
+:root{
+  --bg:#F6F7F9;
+  --surface:#FFFFFF;
+  --surface2:#F1F3F6;
+  --text:#15171A;
+  --text2:#606874;
+  --text3:#949BA5;
+  --line:#E5E9EE;
+  --blue:#3478F6;
+  --blueSoft:#EAF2FF;
+  --green:#20A36A;
+  --greenSoft:#EAF7F1;
+  --amber:#AF6900;
+  --amberSoft:#FFF3DE;
+  --red:#E34C4C;
+  --redSoft:#FDECEC;
+  --shadow:0 10px 30px rgba(20,26,34,.07);
+  --shadowSoft:0 4px 15px rgba(20,26,34,.05);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{
+  margin:0;min-height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","PingFang SC","Helvetica Neue",Arial,sans-serif;
+  touch-action:manipulation;
+}
+body{display:flex;justify-content:center}
+button,input,select,textarea{font:inherit}
+button{border:0}
+svg{display:block}
+.app{
+  width:min(100%,480px);min-height:100vh;
+  padding:calc(18px + env(safe-area-inset-top)) 15px calc(106px + env(safe-area-inset-bottom));
+}
+.topbar{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:18px}
+.topbar h1{margin:0;font-size:30px;line-height:1;font-weight:800;letter-spacing:-.035em;padding-top:8px}
+.top-right{
+  display:flex;align-items:center;justify-content:flex-end;
+}
+.top-actions{display:flex;gap:12px;align-items:center}
+.icon-btn{
+  width:26px;height:26px;background:transparent;color:#5F6874;
+  display:grid;place-items:center;position:relative;padding:0;
+}
+.icon-btn svg{width:24px;height:24px}
+.icon-btn.notify-on::after{
+  content:"";position:absolute;right:0;top:1px;width:7px;height:7px;border-radius:50%;
+  background:var(--green);border:2px solid var(--bg);
+}
+
+.summary{
+  background:linear-gradient(145deg,#fff,#FCFDFE);border:1px solid rgba(226,230,236,.95);
+  border-radius:26px;padding:19px;box-shadow:var(--shadow);margin-bottom:16px;
+}
+.summary-top{display:flex;justify-content:space-between;align-items:center}
+.summary-label,.summary-date{font-size:12px;color:var(--text3);font-weight:650}
+.summary-main{margin-top:8px;font-size:22px;line-height:1.4;font-weight:760;letter-spacing:-.02em}
+.summary-main strong{color:var(--blue)}
+.summary-sub{margin-top:9px;display:flex;align-items:center;gap:8px;color:var(--text2);font-size:13px}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex:0 0 auto}
+
+.segmented{
+  display:grid;grid-template-columns:1fr 1fr;background:#E9ECF1;border-radius:16px;padding:4px;margin-bottom:14px;
+}
+.segmented button{
+  background:transparent;color:#767D87;padding:10px 12px;border-radius:12px;font-size:14px;font-weight:730;
+}
+.segmented button.active{background:#fff;color:var(--text);box-shadow:0 2px 9px rgba(20,26,34,.07)}
+
+.section-caption{
+  display:flex;justify-content:space-between;align-items:center;padding:2px 2px 10px;color:var(--text3);font-size:12px;
+}
+.list{display:grid;gap:12px}
+.trip-card{
+  background:#fff;border:1px solid rgba(227,231,236,.96);border-radius:23px;padding:17px;
+  box-shadow:var(--shadowSoft);
+}
+.route-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.route{font-size:21px;font-weight:790;letter-spacing:-.025em;line-height:1.28}
+.badge{
+  flex:none;font-size:12px;font-weight:740;padding:6px 9px;border-radius:999px;
+  background:var(--amberSoft);color:var(--amber);
+}
+.badge.done{background:var(--greenSoft);color:var(--green)}
+
+.meta{
+  display:flex;flex-wrap:wrap;gap:7px 12px;margin-top:12px;color:var(--text2);font-size:13.5px;
+}
+.meta-item{display:flex;align-items:center;gap:6px}
+.meta-mark{
+  width:22px;height:22px;border-radius:8px;background:var(--surface2);
+  display:grid;place-items:center;color:#737C87;font-size:11px;font-weight:760;line-height:1;
+}
+.reminder{
+  margin-top:11px;background:#F7F9FC;border-radius:14px;padding:10px 11px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.reminder-left{display:flex;align-items:center;gap:8px;color:#46505C;font-size:13px;font-weight:680}
+.reminder-left svg{width:18px;height:18px;color:#5F6874;flex:0 0 auto}
+.reminder-chip{
+  font-size:11px;color:var(--blue);background:var(--blueSoft);padding:5px 7px;border-radius:999px;font-weight:720;
+}
+.note{margin-top:10px;color:var(--text3);font-size:12.5px;line-height:1.5}
+.card-actions{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px}
+.more-btn{
+  width:32px;height:32px;border-radius:0;background:transparent;color:#727B87;
+  display:grid;place-items:center;padding:0;
+}
+.more-btn svg{width:20px;height:20px}
+.action-main{
+  min-width:122px;height:40px;border-radius:13px;padding:0 15px;font-size:13.5px;font-weight:760;
+  display:flex;align-items:center;justify-content:center;
+}
+.action-main.done{background:var(--greenSoft);color:var(--green)}
+.action-main.restore{background:var(--surface2);color:#5D6671}
+
+.empty{
+  background:#fff;border:1px dashed #DDE2E8;border-radius:22px;padding:48px 20px;text-align:center;color:var(--text3)
+}
+.empty-icon{
+  width:42px;height:42px;border-radius:14px;background:var(--surface2);display:grid;place-items:center;margin:0 auto;
+  color:#7E8792;
+}
+.empty-icon svg{width:21px;height:21px}
+.empty strong{display:block;color:#626B75;margin-top:10px;font-size:14px}
+.empty span{display:block;margin-top:5px;font-size:12px}
+
+.fab-wrap{
+  position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;justify-content:center;pointer-events:none;
+  padding:12px 15px calc(13px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top,rgba(246,247,249,1) 66%,rgba(246,247,249,0));
+}
+.fab{
+  pointer-events:auto;width:min(450px,calc(100vw - 30px));height:54px;border-radius:18px;
+  background:#15171A;color:#fff;font-size:16px;font-weight:770;box-shadow:0 14px 32px rgba(20,24,30,.17);
+}
+
+.backdrop{
+  position:fixed;inset:0;background:rgba(18,22,28,.25);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;transition:.18s;z-index:20;
+}
+.backdrop.show{opacity:1;pointer-events:auto}
+.sheet{
+  position:fixed;left:50%;bottom:0;transform:translate(-50%,105%);width:min(100%,480px);
+  max-height:89vh;overflow:auto;background:#fff;border-radius:28px 28px 0 0;
+  padding:8px 17px calc(21px + env(safe-area-inset-bottom));z-index:21;
+  box-shadow:0 -20px 55px rgba(15,20,28,.14);transition:.28s cubic-bezier(.22,.9,.28,1);
+}
+.sheet.show{transform:translate(-50%,0)}
+.grabber{width:38px;height:5px;border-radius:999px;background:#D9DDE3;margin:1px auto 14px}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.sheet-head h2{margin:0;font-size:22px;letter-spacing:-.02em}
+.close-btn{
+  width:30px;height:30px;border-radius:0;background:transparent;color:#69727E;
+  display:grid;place-items:center;padding:0
+}
+.close-btn svg{width:21px;height:21px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+label{display:grid;gap:7px;margin-bottom:11px;color:#707985;font-size:12px;font-weight:680}
+input,select,textarea{
+  width:100%;border:1px solid #E2E6EB;background:#F8F9FB;color:var(--text);
+  border-radius:14px;padding:13px 14px;outline:none;font-size:15px;
+}
+input:focus,select:focus,textarea:focus{border-color:#A8C2FF;box-shadow:0 0 0 3px #EDF3FF}
+textarea{resize:none}
+.form-actions{display:flex;gap:10px;margin-top:4px}
+.delete-btn{
+  width:48px;height:52px;border-radius:16px;background:var(--redSoft);color:var(--red);display:grid;place-items:center
+}
+.delete-btn svg{width:19px;height:19px}
+.save-btn{flex:1;height:52px;border-radius:16px;background:var(--blue);color:#fff;font-weight:770;font-size:16px}
+
+.settings-card{display:grid;gap:12px}
+.setting-row{
+  display:flex;justify-content:space-between;align-items:center;background:#F7F9FB;border-radius:15px;padding:13px 14px;
+}
+.setting-copy strong{display:block;font-size:14px}
+.setting-copy span{display:block;margin-top:3px;color:var(--text3);font-size:12px}
+.switch{width:49px;height:29px;border-radius:999px;background:#CDD2D8;padding:3px}
+.switch::after{
+  content:"";display:block;width:23px;height:23px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.16);
+  transition:.18s;
+}
+.switch.on{background:var(--green)}
+.switch.on::after{transform:translateX(20px)}
+.settings-btn{width:100%;height:48px;border-radius:15px;background:var(--surface2);color:#4F5864;font-weight:730}
+
+.history-group{margin-bottom:18px}
+.history-month{
+  color:var(--text3);font-size:12px;font-weight:700;margin:2px 2px 9px;
+}
+.history-item{
+  background:#F8F9FB;border:1px solid #E8EBEF;border-radius:16px;padding:13px 14px;margin-bottom:9px;
+}
+.history-top{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.history-route{font-size:15px;font-weight:760;min-width:0}.history-date{flex:none}
+.history-date{font-size:11px;color:var(--text3)}
+.history-meta{margin-top:7px;font-size:12px;color:var(--text2)}
+.history-actions{display:flex;justify-content:flex-end;margin-top:10px}
+.history-delete{
+  height:34px;border-radius:11px;background:var(--redSoft);color:var(--red);padding:0 11px;font-size:12px;font-weight:720;
+}
+
+.menu{
+  position:fixed;z-index:30;width:188px;background:#fff;border:1px solid #E4E8ED;border-radius:16px;
+  box-shadow:0 14px 42px rgba(17,22,30,.15);padding:6px;display:none;
+}
+.menu.show{display:block}
+.menu button{
+  width:100%;text-align:left;background:transparent;padding:11px 12px;border-radius:11px;color:#424A55;font-weight:650;font-size:14px;
+}
+.menu .danger{color:var(--red)}
+
+.toast{
+  position:fixed;left:50%;bottom:92px;transform:translate(-50%,14px);z-index:40;
+  background:rgba(21,23,26,.94);color:#fff;padding:10px 14px;border-radius:13px;font-size:13px;
+  opacity:0;pointer-events:none;transition:.18s;white-space:nowrap;max-width:calc(100vw - 30px);
+  overflow:hidden;text-overflow:ellipsis;
+}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+
+@media(max-width:390px){
+  .app{padding-left:12px;padding-right:12px}
+  .summary{padding:17px}
+  .route{font-size:20px}
+  .form-grid{grid-template-columns:1fr}
+  .topbar{align-items:flex-start}
+}
+
+/* v8: 浅色版第一代骨架 —— 减少框、胶囊与装饰 */
+.app{padding-bottom:calc(30px + env(safe-area-inset-bottom));}
+.topbar{margin-bottom:22px;align-items:center;}
+.topbar h1{padding-top:0;}
+.top-actions{gap:16px;}
+.icon-btn{width:27px;height:27px;color:#6b7480;}
+.icon-btn svg{width:23px;height:23px;}
+.simple-summary{display:flex;align-items:flex-end;justify-content:space-between;padding:18px 20px;border-radius:22px;margin-bottom:14px;}
+.simple-summary .summary-label{font-size:12px;margin-bottom:7px;}
+.summary-main.compact{margin:0;font-size:20px;line-height:1;}
+.summary-main.compact strong{font-size:35px;color:var(--accent);vertical-align:-4px;margin-right:3px;}
+.simple-tabs{margin-bottom:10px;border-radius:13px;}
+.simple-tabs button{padding:9px 12px;border-radius:9px;}
+.inline-add{width:100%;height:47px;border-radius:14px;background:linear-gradient(135deg,#7c8cff,#6778f1);color:white;font-weight:760;font-size:15px;margin:0 0 16px;box-shadow:0 6px 16px rgba(103,120,241,.16);}
+.section-caption{padding:1px 2px 9px;}
+.list{gap:11px;}
+.trip-card.simple-card{padding:17px 18px;border-radius:21px;box-shadow:0 5px 18px rgba(21,27,38,.045);}
+.trip-card.simple-card .route-row{margin-bottom:8px;}
+.trip-card.simple-card .route{font-size:21px;}
+.trip-card.simple-card .badge{padding:5px 9px;}
+.plain-line{font-size:14px;color:#69727e;line-height:1.55;margin-top:5px;}
+.remind-line{color:#505a66;font-weight:650;margin-top:7px;}
+.remind-line.overdue{color:#C95C5C;}
+.overdue-note{font-size:12px;font-weight:700;color:#C95C5C;margin-left:5px;}
+
+.simple-note{margin-top:7px;font-size:13px;color:#929aa4;-webkit-line-clamp:2;display:-webkit-box;-webkit-box-orient:vertical;overflow:hidden;}
+.simple-actions{margin-top:14px;justify-content:flex-end;}
+.simple-complete{flex:1;max-width:none;height:41px;}
+.simple-more{width:38px;height:38px;background:transparent;border-radius:0;}
+.simple-more svg{width:20px;height:20px;}
+.fab-wrap{display:none!important;}
+@media(max-width:390px){.simple-summary{padding:17px 18px}.trip-card.simple-card{padding:16px}.trip-card.simple-card .route{font-size:20px}}
+
+
+.confirm-layer{
+  position:fixed;inset:0;z-index:60;background:rgba(17,22,29,.28);
+  backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;
+  padding:20px;
+}
+.confirm-layer.show{display:flex}
+.confirm-box{
+  width:min(320px,100%);background:#fff;border-radius:20px;padding:20px;
+  box-shadow:0 18px 54px rgba(16,21,29,.18);text-align:center;
+}
+.confirm-box h3{margin:0;font-size:18px;letter-spacing:-.01em}
+.confirm-box p{margin:9px 0 18px;color:#7D8590;font-size:13px;line-height:1.55}
+.confirm-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.confirm-actions button{height:44px;border-radius:13px;font-weight:750}
+.confirm-cancel{background:#F1F3F6;color:#59626D}
+.confirm-delete{background:#FDECEC;color:#E34C4C}
+.confirm-delete.confirm-primary{background:#176E9E;color:#fff}
+
+
+/* v13 palette preview — only colors changed, v12 layout/logic preserved */
+:root{
+  --bg:#F8F5EA;
+  --surface:#FFFDF8;
+  --surface2:#EEF5F5;
+  --text:#1D2B36;
+  --text2:#5F707A;
+  --text3:#8EA1A8;
+  --line:#DCE8E9;
+
+  --blue:#176E9E;
+  --blueSoft:#E7F2F7;
+
+  --green:#2093AD;
+  --greenSoft:#E1F6F3;
+
+  --amber:#176E9E;
+  --amberSoft:#E7F2F7;
+
+  --red:#D95858;
+  --redSoft:#FBEAEA;
+
+  --shadow:0 10px 30px rgba(23,110,158,.065);
+  --shadowSoft:0 4px 15px rgba(23,110,158,.045);
+}
+
+html,body{background:var(--bg);color:var(--text)}
+.icon-btn{color:#4E6E7C}
+.icon-btn.notify-on::after{background:#34C7C8;border-color:var(--bg)}
+
+.summary,
+.simple-summary{
+  background:linear-gradient(145deg,#FFFDF8 0%,#EEF8F9 58%,#E7F2F8 100%);
+  border-color:#DCE9EA;
+  box-shadow:0 8px 24px rgba(23,110,158,.055);
+}
+.summary-main strong,
+.summary-main.compact strong{color:#176E9E}
+
+.segmented,
+.simple-tabs{background:#E7EFEF}
+.segmented button,
+.simple-tabs button{color:#71818A}
+.segmented button.active,
+.simple-tabs button.active{
+  background:#FFFDF8;
+  color:#176E9E;
+  box-shadow:0 2px 8px rgba(23,110,158,.07);
+}
+
+.inline-add{
+  background:linear-gradient(135deg,#176E9E,#2093AD);
+  box-shadow:0 6px 16px rgba(23,110,158,.18);
+}
+
+.trip-card,
+.trip-card.simple-card{
+  background:#FFFDF8;
+  border-color:#DCE8E9;
+  box-shadow:0 5px 18px rgba(23,110,158,.045);
+}
+
+.badge{
+  background:#E7F2F7;
+  color:#176E9E;
+}
+.badge.done{
+  background:#E1F6F3;
+  color:#2093AD;
+}
+
+.plain-line{color:#65747D}
+.remind-line{color:#385D6C}
+.simple-note{color:#8AA0A8}
+
+.action-main.done,
+.simple-complete{
+  background:#DDF6F1;
+  color:#176E79;
+}
+.action-main.restore{
+  background:#EEF5F5;
+  color:#58717A;
+}
+
+.more-btn,
+.simple-more{color:#6A7E87}
+
+.section-caption{color:#8EA1A8}
+.summary-label,.summary-date{color:#8EA1A8}
+
+.sheet,
+.confirm-box,
+.menu{background:#FFFDF8}
+.sheet{box-shadow:0 -20px 55px rgba(23,110,158,.12)}
+.grabber{background:#C9DCDD}
+
+input,select,textarea{
+  background:#F4F8F7;
+  border-color:#DCE8E9;
+  color:#1D2B36;
+}
+input:focus,select:focus,textarea:focus{
+  border-color:#8CC7EC;
+  box-shadow:0 0 0 3px rgba(140,199,236,.22);
+}
+.save-btn{background:#176E9E}
+
+.setting-row{background:#F1F7F6}
+.settings-btn{background:#EEF5F5;color:#4E6974}
+.switch.on{background:#34C7C8}
+
+.history-item{
+  background:#F5F9F8;
+  border-color:#DCE8E9;
+}
+.history-month{color:#7F9AA3}
+
+.empty{
+  background:#FFFDF8;
+  border-color:#D7E5E6;
+}
+.empty-icon{background:#EEF5F5;color:#64808A}
+
+.confirm-cancel{background:#EEF5F5;color:#526A73}
+.toast{background:rgba(29,43,54,.94)}
+
+
+/* iPhone zoom guard:
+   - manipulation removes double-tap zoom
+   - 16px inputs prevent iOS focus-zoom
+   - viewport above locks page scale */
+*, *::before, *::after { touch-action: manipulation; }
+html { -webkit-text-size-adjust: 100%; }
+input, select, textarea { font-size:16px !important; }
+
+
+/* v15 reliability polish — visual layout preserved */
+.route-row{min-width:0}
+.route{
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.plain-line,
+.remind-line,
+.simple-note,
+.note,
+.history-route,
+.history-meta,
+.setting-copy{
+  min-width:0;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.simple-note{
+  -webkit-line-clamp:2;
+  line-clamp:2;
+}
+.card-actions{min-width:0}
+
+.backup-block{
+  margin-top:2px;
+  padding-top:12px;
+  border-top:1px solid var(--line);
+}
+.backup-title{
+  font-size:12px;
+  color:var(--text3);
+  margin:0 2px 8px;
+}
+.backup-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:9px;
+}
+.backup-btn{
+  height:44px;
+  border-radius:14px;
+  background:#EEF5F5;
+  color:#4F6974;
+  font-weight:720;
+  font-size:13px;
+}
+
+
+.backup-hint{
+  margin:9px 2px 0;
+  color:var(--text3);
+  font-size:11px;
+  line-height:1.5;
+}
+
+
+.hidden{display:none!important}
+.mode-banner{margin:-8px 0 14px;padding:10px 12px;border:1px solid #EBD9B7;background:#FFF8E8;color:#8B6422;border-radius:14px;font-size:12px;line-height:1.5}
+.setting-copy span.ok{color:#2093AD}.setting-copy span.warn{color:#A66A1F}.switch:disabled{opacity:.55}
+</style>
 </head>
 <body>
-  <main class="shell">
-    <header class="topbar">
-      <div>
-        <div class="eyebrow">CARGO REMINDER</div>
-        <h1>货运行程报备</h1>
-      </div>
-      <div class="notify-actions">
-        <button id="testNotifyBtn" class="ghost subtle">测试通知</button>
-        <button id="notifyBtn" class="ghost">开启提醒</button>
-      </div>
-    </header>
-    <div id="notifyStatus" class="notify-status">通知状态：尚未检测</div>
 
-    <div id="modeBanner" class="mode-banner hidden"></div>
+<main class="app">
+  <header class="topbar">
+    <h1>行程提醒</h1>
+    <div class="top-right">      <div class="top-actions">
+        <button class="icon-btn" id="historyOpen" aria-label="历史记录" title="历史记录">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+            <path d="M3 3v5h5"/>
+            <path d="M12 7v5l3 2"/>
+          </svg>
+        </button>
+        <button class="icon-btn notify-on" id="settingsOpen" aria-label="提醒设置" title="提醒设置">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/>
+            <path d="M10 21h4"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
 
-    <section class="hero">
-      <div class="hero-title">今天需要处理</div>
-      <div id="todayCount" class="hero-count">0</div>
-      <div class="hero-sub">到达前自动提醒，不再手动记闹钟。</div>
-    </section>
+  <div id="modeBanner" class="mode-banner hidden"></div>
 
-    <section class="toolbar">
-      <button class="filter active" data-filter="all">全部</button>
-      <button class="filter" data-filter="待报备">待报备</button>
-      <button class="filter" data-filter="已报备">已报备</button>
-      <button id="addBtn" class="primary">＋ 新增行程</button>
-    </section>
+  <section class="summary simple-summary">
+    <div>
+      <div class="summary-label">今天需要处理</div>
+      <div class="summary-main compact" id="summaryText"></div>
+    </div>
+    <span class="summary-date" id="summaryDate"></span>
+  </section>
 
-    <section id="tripList" class="trip-list"></section>
-  </main>
+  <div class="segmented simple-tabs">
+    <button id="pendingTab" class="active">待报备</button>
+    <button id="doneTab">已报备</button>
+  </div>
 
-  <dialog id="tripDialog">
-    <form id="tripForm" method="dialog" class="form-card">
-      <div class="form-head">
-        <div>
-          <div class="eyebrow">TRIP</div>
-          <h2 id="formTitle">新增行程</h2>
-        </div>
-        <button type="button" id="closeDialog" class="icon-btn">×</button>
-      </div>
-      <input type="hidden" id="tripId" />
-      <div class="grid-2">
-        <label>发货地<input id="origin" required placeholder="如：鹤壁" /></label>
-        <label>目的地<input id="destination" required placeholder="如：淇县" /></label>
-      </div>
-      <div class="grid-2">
-        <label>发货日期<input id="shipDate" type="date" /></label>
-        <label>预计到达<input id="etaDate" type="date" required /></label>
-      </div>
-      <div class="grid-2">
-        <label>提前几天提醒
-          <select id="remindDays">
-            <option value="0">到达当天</option>
-            <option value="1" selected>提前 1 天</option>
-            <option value="2">提前 2 天</option>
-            <option value="3">提前 3 天</option>
-          </select>
-        </label>
-        <label>提醒时间<input id="remindTime" type="time" value="09:00" /></label>
-      </div>
-      <label>备注<textarea id="note" rows="3" placeholder="车牌、货物名称、联系人……可不填"></textarea></label>
-      <div class="form-actions">
-        <button type="button" id="deleteBtn" class="danger hidden">删除</button>
-        <button type="submit" class="primary grow">保存</button>
-      </div>
-    </form>
-  </dialog>
+  <button class="inline-add" id="addTrip">＋ 新增行程</button>
 
-  <template id="tripTemplate">
-    <article class="trip-card">
-      <div class="route-row">
-        <div class="route"></div>
-        <span class="badge"></span>
-      </div>
-      <div class="dates"></div>
-      <div class="reminder"></div>
-      <div class="note"></div>
-      <div class="card-actions">
-        <button class="done-btn">标记已报备</button>
-        <button class="edit-btn ghost">编辑</button>
-      </div>
-    </article>
-  </template>
+  <div class="section-caption">
+    <span id="sectionCaption"></span>
+    <span id="countLabel"></span>
+  </div>
 
-  <script src="./app.js" type="module"></script>
+  <section id="pendingList" class="list"></section>
+  <section id="doneList" class="list" hidden></section>
+</main>
+
+<div class="backdrop" id="backdrop"></div>
+
+<section class="sheet" id="tripSheet">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <h2 id="tripSheetTitle">新增行程</h2>
+    <button class="close-btn" data-close aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <input type="hidden" id="editId">
+  <div class="form-grid">
+    <label>发货地<input id="origin" placeholder="如：鹤壁"></label>
+    <label>目的地<input id="destination" placeholder="如：淇县"></label>
+  </div>
+  <div class="form-grid">
+    <label>发货日期<input id="shipDate" type="date"></label>
+    <label>预计到达<input id="etaDate" type="date"></label>
+  </div>
+  <div class="form-grid">
+    <label>提前几天提醒
+      <select id="remindDays">
+        <option value="0">到达当天</option>
+        <option value="1" selected>提前 1 天</option>
+        <option value="2">提前 2 天</option>
+        <option value="3">提前 3 天</option>
+      </select>
+    </label>
+    <label>提醒时间<input id="remindTime" type="time" value="10:00" required></label>
+  </div>
+  <label>备注<textarea id="note" rows="3" placeholder="车牌、货物名称、联系人……可不填"></textarea></label>
+  <div class="form-actions">
+    <button class="delete-btn" id="deleteTrip" hidden aria-label="删除">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/>
+      </svg>
+    </button>
+    <button class="save-btn" id="saveTrip">保存行程</button>
+  </div>
+</section>
+
+<section class="sheet" id="settingsSheet">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <h2>提醒设置</h2>
+    <button class="close-btn" data-close aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div class="settings-card">
+    <div class="setting-row">
+      <div class="setting-copy"><strong>到点提醒</strong><span id="notifyStatus">正在检测…</span></div>
+      <button class="switch" id="notifySwitch" aria-label="通知开关"></button>
+    </div>
+    <button class="settings-btn" id="testNotify">发送一条测试通知</button>
+    <div class="setting-row">
+      <div class="setting-copy"><strong>本机记录</strong><span>不同浏览器互不相通</span></div>
+      <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="#65707C" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M10 18.5h4"/>
+      </svg>
+    </div>
+    <div class="backup-block">
+      <div class="backup-title">本机数据备份</div>
+      <div class="backup-actions">
+        <button class="backup-btn" id="exportBackup">导出备份</button>
+        <button class="backup-btn" id="importBackup">导入备份</button>
+      </div>
+      <div class="backup-hint">导出后会保存到浏览器默认下载位置；iPhone 通常可在“文件”App 的“下载项”中找到。</div>
+      <input id="backupFile" type="file" accept="application/json,.json" hidden>
+    </div>
+  </div>
+</section>
+
+<section class="sheet" id="historySheet">
+  <div class="grabber"></div>
+  <div class="sheet-head">
+    <h2>历史记录</h2>
+    <button class="close-btn" data-close aria-label="关闭">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+  <div id="historyContent"></div>
+</section>
+
+<div class="menu" id="moreMenu">
+  <button id="menuEdit">编辑行程</button>
+  <button id="menuRestore" hidden>恢复为待报备</button>
+  <button class="danger" id="menuDelete">删除行程</button>
+</div>
+
+
+<div class="confirm-layer" id="confirmLayer">
+  <div class="confirm-box">
+    <h3 id="confirmTitle">确认删除？</h3>
+    <p id="confirmText">删除后无法恢复。</p>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" id="confirmCancel">取消</button>
+      <button class="confirm-delete" id="confirmDelete">删除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SH_TZ = 'Asia/Shanghai';
+const DAY = 86400000;
+
+function shDateKey(now = new Date()){
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: SH_TZ, year:'numeric', month:'2-digit', day:'2-digit'
+  }).formatToParts(now);
+  const get = type => parts.find(p => p.type === type)?.value || '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+function dateKeyDayNumber(key){
+  const [y,m,d] = String(key).split('-').map(Number);
+  return Math.floor(Date.UTC(y,m-1,d) / DAY);
+}
+function addDaysToDateKey(key, days){
+  const [y,m,d] = String(key).split('-').map(Number);
+  const dt = new Date(Date.UTC(y,m-1,d + Number(days || 0)));
+  return `${dt.getUTCFullYear()}-${String(dt.getUTCMonth()+1).padStart(2,'0')}-${String(dt.getUTCDate()).padStart(2,'0')}`;
+}
+function reminderDateKey(t){
+  return addDaysToDateKey(t.etaDate, -Number(t.remindDays || 0));
+}
+function reminderEpoch(t){
+  const [y,m,d] = reminderDateKey(t).split('-').map(Number);
+  const [hh,mm] = (t.remindTime || '10:00').split(':').map(Number);
+  return Date.UTC(y, m-1, d, hh-8, mm, 0, 0);
+}
+
+const icons = {
+  clock:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="7"/><path d="M12 10v4l2.5 1.5M8 3h8M7 5l-2 2M17 5l2 2"/></svg>`,
+  more:`<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>`,
+  check:`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4 4L19 7"/></svg>`
+};
+
+const WORKER_API_ORIGIN = 'https://cargo-reminder-pwa.k995680983-3fb.workers.dev';
+const API_BASE = location.hostname.endsWith('.github.io') ? WORKER_API_ORIGIN : '';
+const LOCAL_KEY = 'cargoTripsLocalV2';
+const CLIENT_ID_KEY = 'cargoReminderBrowserId';
+let serverMode = false;
+
+function getClientId(){
+  let id=localStorage.getItem(CLIENT_ID_KEY);
+  if(!id){
+    id=(crypto.randomUUID?crypto.randomUUID():`browser-${Date.now()}-${Math.random().toString(36).slice(2)}`).replace(/[^A-Za-z0-9_-]/g,'');
+    localStorage.setItem(CLIENT_ID_KEY,id);
+  }
+  return id;
+}
+const CLIENT_ID=getClientId();
+function normalizeStoredTrip(raw,index=0){
+  if(!raw||typeof raw!=='object')return null;
+  const origin=String(raw.origin||'').trim(),destination=String(raw.destination||'').trim();
+  const etaDate=String(raw.etaDate||raw.eta_date||'');
+  if(!origin||!destination||!isValidDateKey(etaDate))return null;
+  const shipRaw=String(raw.shipDate||raw.ship_date||'');
+  const daysNum=Number(raw.remindDays??raw.remind_days_before??1);
+  const remindDays=Number.isFinite(daysNum)?Math.max(0,Math.min(3,Math.floor(daysNum))):1;
+  const timeRaw=String(raw.remindTime||raw.remind_time||'10:00');
+  const status=(raw.status==='done'||raw.status==='已报备')?'done':'pending';
+  let completedAt=raw.completedAt||raw.completed_at||null;
+  if(status==='done'&&!isValidDateKey(completedAt))completedAt=shDateKey();
+  if(status==='pending')completedAt=null;
+  return {id:String(raw.id||raw.local_id||`legacy-${Date.now()}-${index}`),origin,destination,shipDate:isValidDateKey(shipRaw)?shipRaw:'',etaDate,remindDays,remindTime:/^([01]\d|2[0-3]):[0-5]\d$/.test(timeRaw)?timeRaw:'10:00',note:String(raw.note||''),status,completedAt};
+}
+function localLoad(){
+  try{
+    const current=localStorage.getItem(LOCAL_KEY);
+    let source=current!==null?JSON.parse(current):JSON.parse(localStorage.getItem('cargoTrips')||'[]');
+    if(!Array.isArray(source))source=[];
+    return source.map(normalizeStoredTrip).filter(Boolean);
+  }catch{return [];}
+}
+function localSave(){localStorage.setItem(LOCAL_KEY,JSON.stringify(state.trips));}
+async function api(url,options={}){
+  let target=url.startsWith('/api/')?API_BASE+url:url;
+  if(url.startsWith('/api/'))target+=(target.includes('?')?'&':'?')+'client_id='+encodeURIComponent(CLIENT_ID);
+  const r=await fetch(target,{headers:{'Content-Type':'application/json'},...options});
+  if(!r.ok){let message='请求失败';try{message=(await r.json()).error||message}catch{}throw new Error(message)}
+  return r.status===204?null:r.json();
+}
+function setModeBanner(message=''){
+  const el=$('#modeBanner');
+  if(!message){el.classList.add('hidden');el.textContent='';return}
+  el.textContent=message;el.classList.remove('hidden');
+}
+function tripsForBackend(){
+  return state.trips.map(t=>({id:t.id,origin:t.origin,destination:t.destination,ship_date:t.shipDate||'',eta_date:t.etaDate,remind_days_before:Number(t.remindDays||0),remind_time:t.remindTime||'10:00',note:t.note||'',status:t.status==='done'?'已报备':'待报备',notified:0}));
+}
+async function syncLocalTrips(){
+  if(!serverMode)return false;
+  try{await api('/api/sync-all',{method:'POST',body:JSON.stringify({trips:tripsForBackend()})});setModeBanner('');return true}
+  catch{serverMode=false;setModeBanner('⚠️ 行程已保存在本浏览器，但提醒后台暂时没同步上。网络恢复后重新打开页面会自动重试。');return false}
+}
+function saveRenderSync(){localSave();render();if(serverMode)void syncLocalTrips();}
+
+const state={
+  activeTab:'pending',
+  menuTripId:null,
+  trips:localLoad()
+};
+
+const $=s=>document.querySelector(s);
+let pendingConfirmAction=null;
+function askConfirm({title='请确认',message='',confirmText='确认',danger=false}, action){
+  pendingConfirmAction=action;
+  $('#confirmTitle').textContent=title;
+  $('#confirmText').textContent=message;
+  const btn=$('#confirmDelete');
+  btn.textContent=confirmText;
+  btn.classList.toggle('confirm-primary',!danger);
+  $('#confirmLayer').classList.add('show');
+}
+function askDelete(message, action){
+  askConfirm({title:'确认删除？',message,confirmText:'删除',danger:true},action);
+}
+function closeConfirm(){
+  $('#confirmLayer').classList.remove('show');
+  pendingConfirmAction=null;
+}
+$('#confirmCancel').onclick=closeConfirm;
+$('#confirmLayer').onclick=e=>{
+  if(e.target===$('#confirmLayer')) closeConfirm();
+};
+$('#confirmDelete').onclick=()=>{
+  const action=pendingConfirmAction;
+  $('#confirmLayer').classList.remove('show');
+  pendingConfirmAction=null;
+  if(action) action();
+};
+function escapeHTML(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function md(date){if(!isValidDateKey(date))return '—';const [y,m,d]=date.split('-').map(Number);return `${m}月${d}日`}
+function reminderDate(t){
+  const [,m,d]=reminderDateKey(t).split('-').map(Number);
+  return `${m}月${d}日`;
+}
+function isDueToday(t){
+  return t.status==='pending' && reminderDateKey(t)===shDateKey();
+}
+function isOverdue(t){
+  return t.status==='pending' && reminderEpoch(t)<=Date.now();
+}
+function completedAgeDays(t){
+  if(!t.completedAt)return -1;
+  return dateKeyDayNumber(shDateKey()) - dateKeyDayNumber(t.completedAt);
+}
+function buckets(){
+  const pending=state.trips.filter(t=>t.status==='pending').sort((a,b)=>reminderEpoch(a)-reminderEpoch(b));
+  const recentDone=state.trips.filter(t=>t.status==='done' && completedAgeDays(t)<3).sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''));
+  const history=state.trips.filter(t=>t.status==='done' && completedAgeDays(t)>=3).sort((a,b)=>(b.completedAt||'').localeCompare(a.completedAt||''));
+  return {pending,recentDone,history};
+}
+function cardHTML(t){
+  const done=t.status==='done';
+  return `<article class="trip-card simple-card" data-id="${t.id}">
+    <div class="route-row">
+      <div class="route">${escapeHTML(t.origin)} → ${escapeHTML(t.destination)}</div>
+      <span class="badge ${done?'done':''}">${done?'已报备':'待报备'}</span>
+    </div>
+    <div class="plain-line">发货 ${shortDate(t.shipDate)} · 预计到达 ${shortDate(t.etaDate)}</div>
+    <div class="plain-line remind-line ${isOverdue(t)?'overdue':''}">提醒：${shortReminderDate(t)} ${t.remindTime}（${Number(t.remindDays)===0?'当天':`提前${t.remindDays}天`}）${isOverdue(t)?'<span class="overdue-note">· 已到提醒时间</span>':''}</div>
+    ${t.note?`<div class="note simple-note">${escapeHTML(t.note)}</div>`:''}
+    <div class="card-actions simple-actions">
+      ${done?'':`<button class="action-main done simple-complete" data-toggle="${t.id}">完成报备</button>`}
+      <button class="more-btn simple-more" data-more="${t.id}" aria-label="更多">${icons.more}</button>
+    </div>
+  </article>`;
+}
+function shortDate(date){
+  if(!isValidDateKey(date))return '—';
+  const [,m,d]=date.split('-').map(Number); return `${m}/${d}`;
+}
+function shortReminderDate(t){
+  const [,m,d]=reminderDateKey(t).split('-').map(Number);
+  return `${m}/${d}`;
+}
+function emptyHTML(kind){
+  return `<div class="empty">
+    <div class="empty-icon">${icons.check}</div>
+    <strong>${kind==='pending'?'没有待报备行程':'最近 3 天没有已报备行程'}</strong>
+    <span>${kind==='pending'?'今天可以放心一点啦':'更早的记录会放在历史记录里'}</span>
+  </div>`;
+}
+function render(){
+  const {pending,recentDone}=buckets();
+  const todayDue=pending.filter(isDueToday);
+  const [,todayM,todayD]=shDateKey().split('-').map(Number);
+  $('#summaryDate').textContent=`${todayM}月${todayD}日`;
+  $('#pendingList').innerHTML=pending.length?pending.map(cardHTML).join(''):emptyHTML('pending');
+  $('#doneList').innerHTML=recentDone.length?recentDone.map(cardHTML).join(''):emptyHTML('done');
+
+  $('#summaryText').innerHTML=`<strong>${todayDue.length}</strong> 条`;
+  $('#sectionCaption').textContent=state.activeTab==='pending'?'按提醒时间排序':'最近 3 天';
+  $('#countLabel').textContent=`${state.activeTab==='pending'?pending.length:recentDone.length} 条`;
+
+  renderHistory();
+  bindCards();
+}
+function renderHistory(){
+  const {history}=buckets();
+  const box=$('#historyContent');
+  if(!history.length){
+    box.innerHTML=`<div class="empty"><div class="empty-icon">${icons.check}</div><strong>还没有历史记录</strong><span>已报备满 3 天后会自动归档到这里</span></div>`;
+    return;
+  }
+  const groups={};
+  history.forEach(t=>{
+    const [y,m]=t.completedAt.split('-');
+    const key=`${y}年${Number(m)}月`;
+    (groups[key] ||= []).push(t);
+  });
+  box.innerHTML=Object.entries(groups).map(([month,items])=>`
+    <div class="history-group">
+      <div class="history-month">${month}</div>
+      ${items.map(t=>`
+        <div class="history-item">
+          <div class="history-top">
+            <div class="history-route">${escapeHTML(t.origin)} → ${escapeHTML(t.destination)}</div>
+            <div class="history-date">${md(t.completedAt)} 完成</div>
+          </div>
+          <div class="history-meta">${md(t.shipDate)} 发货 · ${md(t.etaDate)} 到达</div>
+          <div class="history-actions"><button class="history-delete" data-history-delete="${t.id}">删除记录</button></div>
+        </div>`).join('')}
+    </div>`).join('');
+  document.querySelectorAll('[data-history-delete]').forEach(btn=>{
+    btn.onclick=()=>{
+      const id=btn.dataset.historyDelete;
+      askDelete('确定删除这条历史记录吗？删除后无法恢复。', ()=>{
+        state.trips=state.trips.filter(t=>t.id!==id);
+        toast('历史记录已删除');
+        saveRenderSync();
+      });
+    };
+  });
+}
+function bindCards(){
+  document.querySelectorAll('[data-toggle]').forEach(btn=>{
+    btn.onclick=()=>{
+      const t=state.trips.find(x=>x.id===btn.dataset.toggle);
+      if(!t)return;
+      t.status='done';
+      t.completedAt=shDateKey();
+      toast('已移至“已报备”');
+      saveRenderSync();
+    }
+  });
+  document.querySelectorAll('[data-more]').forEach(btn=>{
+    btn.onclick=e=>{
+      state.menuTripId=btn.dataset.more;
+      const trip=state.trips.find(t=>t.id===state.menuTripId);
+      $('#menuRestore').hidden=!trip || trip.status!=='done';
+      const r=btn.getBoundingClientRect(), menu=$('#moreMenu');
+      menu.style.left=Math.min(window.innerWidth-198,Math.max(10,r.left-145))+'px';
+      menu.style.top=Math.min(window.innerHeight-154,r.bottom+6)+'px';
+      menu.classList.add('show');e.stopPropagation();
+    };
+  });
+}
+function setTab(tab){
+  state.activeTab=tab;
+  $('#pendingTab').classList.toggle('active',tab==='pending');
+  $('#doneTab').classList.toggle('active',tab==='done');
+  $('#pendingList').hidden=tab!=='pending';
+  $('#doneList').hidden=tab!=='done';
+  render();
+}
+$('#pendingTab').onclick=()=>setTab('pending');
+$('#doneTab').onclick=()=>setTab('done');
+
+function openSheet(el){$('#backdrop').classList.add('show');el.classList.add('show')}
+function closeSheets(){
+  $('#backdrop').classList.remove('show');
+  document.querySelectorAll('.sheet.show').forEach(s=>s.classList.remove('show'));
+}
+$('#backdrop').onclick=closeSheets;
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=closeSheets);
+
+$('#settingsOpen').onclick=()=>{openSheet($('#settingsSheet'));void refreshPushState();};
+$('#historyOpen').onclick=()=>openSheet($('#historySheet'));
+
+function setNotifyState({enabled=false,message='',kind=''}){
+  $('#notifySwitch').classList.toggle('on',enabled);
+  $('#settingsOpen').classList.toggle('notify-on',enabled);
+  const el=$('#notifyStatus');el.textContent=message||(enabled?'已开启 Web Push':'已关闭 Web Push');el.classList.remove('ok','warn');if(kind)el.classList.add(kind);
+}
+function isIosStandalone(){const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);return !ios||window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;}
+function base64ToUint8Array(base64){const padding='='.repeat((4-base64.length%4)%4),b64=(base64+padding).replace(/-/g,'+').replace(/_/g,'/'),raw=atob(b64);return Uint8Array.from([...raw].map(c=>c.charCodeAt(0)));}
+function errorText(e){return [e?.name,e?.message].filter(Boolean).join('：')||'未知错误';}
+async function refreshPushState(){
+  const ios=/iphone|ipad|ipod/i.test(navigator.userAgent);
+  if(ios&&!isIosStandalone()){setNotifyState({message:'iPhone 请先添加到主屏幕，再从桌面图标打开',kind:'warn'});return}
+  if(!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window)){setNotifyState({message:'当前环境不支持 Web Push',kind:'warn'});return}
+  try{const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();const enabled=Boolean(sub&&Notification.permission==='granted');setNotifyState({enabled,message:enabled?'已开启 Web Push':Notification.permission==='denied'?'通知权限已被拒绝':'未开启 Web Push',kind:enabled?'ok':Notification.permission==='denied'?'warn':''});if(enabled&&serverMode){try{await api('/api/subscribe',{method:'POST',body:JSON.stringify(sub.toJSON?sub.toJSON():sub)})}catch{}}}catch(e){setNotifyState({message:'检测失败：'+errorText(e),kind:'warn'})}
+}
+async function enablePush(){
+  if(!serverMode){toast('提醒后台暂时未连接');return}
+  if(!isIosStandalone()){toast('请先添加到主屏幕后再开启提醒');return}
+  if(!('serviceWorker'in navigator)||!('PushManager'in window)||!('Notification'in window)){setNotifyState({message:'当前环境不支持 Web Push',kind:'warn'});return}
+  $('#notifySwitch').disabled=true;
+  try{const permission=await Notification.requestPermission();if(permission!=='granted'){setNotifyState({message:'通知权限未允许',kind:'warn'});return}const reg=await navigator.serviceWorker.ready,config=await api('/api/config');let sub=await reg.pushManager.getSubscription();if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:base64ToUint8Array(config.vapidPublicKey)});await api('/api/subscribe',{method:'POST',body:JSON.stringify(sub.toJSON?sub.toJSON():sub)});setNotifyState({enabled:true,message:'已开启 Web Push',kind:'ok'});toast('提醒已开启')}catch(e){setNotifyState({message:'开启失败：'+errorText(e),kind:'warn'});toast('提醒开启失败')}finally{$('#notifySwitch').disabled=false}
+}
+async function disablePush(){
+  $('#notifySwitch').disabled=true;
+  try{if('serviceWorker'in navigator&&'PushManager'in window){const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe()}setNotifyState({message:'已关闭 Web Push'});toast('提醒已关闭')}catch{toast('关闭提醒失败');void refreshPushState()}finally{$('#notifySwitch').disabled=false}
+}
+$('#notifySwitch').onclick=()=>$('#notifySwitch').classList.contains('on')?void disablePush():void enablePush();
+async function testNotification(){
+  if(!isIosStandalone()){toast('请从主屏幕图标打开后再测试');return}
+  if(!('serviceWorker'in navigator)||!('Notification'in window)){toast('当前环境不支持通知');return}
+  try{const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();if(permission!=='granted'){setNotifyState({message:'通知权限未允许',kind:'warn'});return}const reg=await navigator.serviceWorker.ready,sub='PushManager'in window?await reg.pushManager.getSubscription():null;if(!sub){toast('请先开启提醒');return}const preview=buckets().pending[0]||state.trips[0]||null;toast('测试通知已排队，约 8 秒后弹出');const result=await api('/api/test-push',{method:'POST',body:JSON.stringify({endpoint:sub.endpoint,delayMs:8000,origin:preview?.origin||'',destination:preview?.destination||'',eta_date:preview?.etaDate||''})});if(!result.queued&&!result.ok)toast('测试通知未送达')}catch(e){toast('测试通知失败：'+errorText(e))}
+}
+$('#testNotify').onclick=()=>void testNotification();
+
+function isValidDateKey(key){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(key))) return false;
+  const [y,m,d]=String(key).split('-').map(Number);
+  const dt=new Date(Date.UTC(y,m-1,d));
+  return dt.getUTCFullYear()===y && dt.getUTCMonth()===m-1 && dt.getUTCDate()===d;
+}
+function normalizedImportedTrip(raw, index){
+  if(!raw || typeof raw!=='object') return null;
+  const origin=String(raw.origin||'').trim();
+  const destination=String(raw.destination||'').trim();
+  const shipDate=String(raw.shipDate||raw.ship_date||'');
+  const etaDate=String(raw.etaDate||raw.eta_date||'');
+  const remindTime=String(raw.remindTime||raw.remind_time||'10:00');
+  const remindDays=Number(raw.remindDays ?? raw.remind_days_before ?? 1);
+  const status=(raw.status==='done'||raw.status==='已报备')?'done':'pending';
+  const completedAt=raw.completedAt||raw.completed_at||null;
+  if(!origin||!destination||!isValidDateKey(shipDate)||!isValidDateKey(etaDate)) return null;
+  if(etaDate < shipDate) return null;
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(remindTime)) return null;
+  if(!Number.isInteger(remindDays) || remindDays<0 || remindDays>3) return null;
+  if(status==='done' && !isValidDateKey(completedAt)) return null;
+  return {
+    id:String(raw.id||`import-${Date.now()}-${index}`),
+    origin,destination,shipDate,etaDate,
+    remindDays,
+    remindTime,
+    note:String(raw.note||''),
+    status,
+    completedAt:status==='done' ? completedAt : null
+  };
+}
+
+$('#exportBackup').onclick=()=>{
+  const payload={
+    app:'行程提醒',
+    version:17,
+    exportedAt:new Date().toISOString(),
+    trips:state.trips
+  };
+  const filename=`行程提醒备份-${shDateKey()}.json`;
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;
+  a.download=filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast(`已导出：${filename}`);
+};
+
+$('#importBackup').onclick=()=>$('#backupFile').click();
+
+$('#backupFile').onchange=async e=>{
+  const file=e.target.files?.[0];
+  e.target.value='';
+  if(!file) return;
+  try{
+    const parsed=JSON.parse(await file.text());
+    const source=Array.isArray(parsed)?parsed:parsed?.trips;
+    if(!Array.isArray(source)) throw new Error('INVALID_BACKUP');
+
+    const imported=source.map(normalizedImportedTrip).filter(Boolean);
+    if(imported.length!==source.length) throw new Error('INVALID_BACKUP');
+
+    const seen=new Set();
+    imported.forEach((t,i)=>{
+      if(seen.has(t.id)) t.id=`import-${Date.now()}-${i}`;
+      seen.add(t.id);
+    });
+
+    const message=imported.length
+      ? `备份中有 ${imported.length} 条记录。导入后会替换当前的 ${state.trips.length} 条记录。`
+      : `这个备份没有行程。继续导入会清空当前的 ${state.trips.length} 条记录。`;
+
+    askConfirm({
+      title:'覆盖现有记录？',
+      message,
+      confirmText:'覆盖导入',
+      danger:false
+    },()=>{
+      state.trips=imported;
+      state.activeTab='pending';
+      localSave();
+      if(serverMode)void syncLocalTrips();
+      setTab('pending');
+      closeSheets();
+      toast(`已导入 ${imported.length} 条记录`);
+    });
+  }catch{
+    toast('备份文件无法识别');
+  }
+};
+
+$('#addTrip').onclick=()=>{
+  $('#tripSheetTitle').textContent='新增行程';
+  $('#editId').value='';
+  $('#origin').value='';
+  $('#destination').value='';
+  const todayKey=shDateKey();
+  $('#shipDate').value=todayKey;
+  $('#etaDate').value=addDaysToDateKey(todayKey,1);
+  $('#remindDays').value='1';
+  $('#remindTime').value='10:00';
+  $('#note').value='';
+  $('#deleteTrip').hidden=true;
+  openSheet($('#tripSheet'));
+};
+function editTrip(id){
+  const t=state.trips.find(x=>x.id===id);if(!t)return;
+  $('#tripSheetTitle').textContent='编辑行程';
+  $('#editId').value=t.id;
+  $('#origin').value=t.origin;$('#destination').value=t.destination;
+  $('#shipDate').value=t.shipDate;$('#etaDate').value=t.etaDate;
+  $('#remindDays').value=t.remindDays;$('#remindTime').value=t.remindTime;
+  $('#note').value=t.note||'';$('#deleteTrip').hidden=false;
+  openSheet($('#tripSheet'));
+}
+$('#saveTrip').onclick=()=>{
+  const origin=$('#origin').value.trim(),destination=$('#destination').value.trim();
+  const shipDate=$('#shipDate').value,etaDate=$('#etaDate').value,remindTime=$('#remindTime').value;
+  if(!origin||!destination||!shipDate||!etaDate){toast('先把行程信息填完整');return}
+  if(!isValidDateKey(shipDate)||!isValidDateKey(etaDate)){toast('日期格式不正确');return}
+  if(etaDate<shipDate){toast('预计到达日期不能早于发货日期');return}
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(remindTime)){toast('请选择提醒时间');return}
+  const payload={origin,destination,shipDate,etaDate,remindDays:Number($('#remindDays').value),remindTime,note:$('#note').value.trim()};
+  const id=$('#editId').value;
+  if(id){const t=state.trips.find(t=>t.id===id);if(t)Object.assign(t,payload);toast('行程已更新')}
+  else{const newId=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${Math.random().toString(36).slice(2)}`;state.trips.unshift({id:newId,status:'pending',completedAt:null,...payload});state.activeTab='pending';toast('行程已添加')}
+  localSave();closeSheets();setTab(state.activeTab);if(serverMode)void syncLocalTrips();
+};
+$('#deleteTrip').onclick=()=>{
+  const id=$('#editId').value;
+  askDelete('确定删除这条行程吗？删除后无法恢复。', ()=>{
+    state.trips=state.trips.filter(t=>t.id!==id);
+    localSave();
+    closeSheets();
+    toast('行程已删除');
+    render();
+    if(serverMode)void syncLocalTrips();
+  });
+};
+$('#menuEdit').onclick=()=>{const id=state.menuTripId;$('#moreMenu').classList.remove('show');editTrip(id)};
+$('#menuRestore').onclick=()=>{
+  const id=state.menuTripId;
+  $('#moreMenu').classList.remove('show');
+  const t=state.trips.find(x=>x.id===id);
+  if(!t)return;
+  t.status='pending';
+  t.completedAt=null;
+  toast('已恢复到“待报备”');
+  saveRenderSync();
+};
+$('#menuDelete').onclick=()=>{
+  const id=state.menuTripId;
+  $('#moreMenu').classList.remove('show');
+  askDelete('确定删除这条行程吗？删除后无法恢复。', ()=>{
+    state.trips=state.trips.filter(t=>t.id!==id);
+    toast('行程已删除');
+    saveRenderSync();
+  });
+};
+document.addEventListener('click',()=>$('#moreMenu').classList.remove('show'));
+
+function toast(msg){
+  const el=$('#toast');el.textContent=msg;el.classList.add('show');
+  clearTimeout(window.__toast);window.__toast=setTimeout(()=>el.classList.remove('show'),1600);
+}
+document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+
+async function initProduction(){
+  localSave();
+  render();
+  if('serviceWorker'in navigator){navigator.serviceWorker.register('./sw.js').then(reg=>{void reg.update();void refreshPushState()}).catch(()=>setNotifyState({message:'推送服务注册失败',kind:'warn'}))}
+  try{await api('/api/health');serverMode=true;setModeBanner('');await syncLocalTrips()}catch{serverMode=false;setModeBanner('⚠️ 当前仅本机保存：行程不会丢，但自动推送要等提醒后台恢复后才能同步。')}
+}
+initProduction();
+</script>
 </body>
 </html>
